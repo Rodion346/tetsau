@@ -2,7 +2,6 @@ from pydantic import BaseModel
 from pydantic import PostgresDsn, Field
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from yookassa import Configuration
 
 
 class DatabaseConfig(BaseModel):
@@ -44,7 +43,6 @@ class Settings(BaseSettings):
         return {"secret_key": self.SECRET_KEY, "algorithm": self.ALGORITHM}
 
 
+
 settings = Settings()
 
-Configuration.account_id = settings.YOOKASSA_ACCOUNT_ID
-Configuration.secret_key = settings.YOOKASSA_SECRET_KEY

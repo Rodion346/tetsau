@@ -29,12 +29,6 @@ class User(BaseModel):
     is_moderator: bool
     created_at: datetime
     updated_at: datetime
-    language_level: Optional[LanguageLevel] = LanguageLevel.A1
-    total_session_time: int = 0
-    telegram_username: Optional[str] = None
-    telegram_id: Optional[str] = None
-    expire_plan: Optional[datetime] = None
-    trial_started_room_id: Optional[UUID] = None
 
 
 class CreateUser(BaseModel):
@@ -42,7 +36,6 @@ class CreateUser(BaseModel):
     hashed_password: str = Field(..., alias="password")
     first_name: str
     last_name: Optional[str]
-    telegram_username: Optional[str]
 
     @validator("hashed_password")
     def validate_password(cls, value):

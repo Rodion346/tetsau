@@ -1,0 +1,15 @@
+services:
+  db_auth:
+    image: postgres:15-alpine
+    container_name: db_auth
+    restart: always
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - /home/plus-vibe/postgres_data:/var/lib/postgresql/data
+    mem_limit: 1g
+    cpus: 1.0
