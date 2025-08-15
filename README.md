@@ -1,6 +1,27 @@
 # test_auth_EM
 
+This project contains a small FastAPI application with custom
+authentication and role based access control. Users can register,
+log in, refresh JWT tokens, update their profile and perform a soft
+delete of their account. Access to resources is controlled by roles
+and permissions stored in the database.
 
+## Access control schema
+
+The following tables describe the RBAC model:
+
+| Table | Purpose |
+|-------|---------|
+| `users` | User accounts. Field `is_active` is used for soft deletion. |
+| `roles` | Named roles (e.g. `admin`, `user`). |
+| `permissions` | Describes available actions on resources such as `items:read`. |
+| `userroles` | Links users with roles. |
+| `rolepermissions` | Links roles with permissions. |
+
+Administrators can view roles and permissions and assign roles to
+users via `/api/v1/admin` endpoints. Mock business resources are
+exposed under `/api/v1/items` and access is granted only if the
+requesting user has the required permission.
 
 ## Getting started
 

@@ -40,6 +40,14 @@ class UserService:
         stmt = await self._user_repo.update_password_by_id(user, password)
         return stmt
 
+    async def update_user_profile(self, user_id: UUID, data: UpdateUserProfile) -> User:
+        stmt = await self._user_repo.update_user_profile(user_id, data)
+        return stmt
+
+    async def deactivate_user(self, user_id: UUID) -> bool:
+        stmt = await self._user_repo.deactivate_user(user_id)
+        return stmt
+
     async def update_session_time_by_id(
         self, user_id: UUID, new_session_time: int
     ) -> bool:

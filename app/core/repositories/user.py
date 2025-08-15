@@ -4,7 +4,7 @@ from sqlalchemy import select, update, UUID
 from pydantic import EmailStr
 from .base import BaseRepository
 from ..models.user import User
-from ...schemas.user import CreateUser, UpdateUserToken
+from ...schemas.user import CreateUser, UpdateUserToken, UpdateUserProfile
 
 
 class UserRepository(BaseRepository):
@@ -41,6 +41,28 @@ class UserRepository(BaseRepository):
                 .values(refresh_token=user.refresh_token)
             )
 
+            await session.commit()
+            return True
+
+    async def update_user_profile(self, user_id: UUID, data: UpdateUserProfile) -> User:
+        async with self.db() as session:
+            stmt = (
+                update(self.model)
+                .filter_by(id=user_id)
+                .values(**data.model_dump(exclude_unset=True))
+                .returning(self.model)
+            )
+            result = await session.execute(stmt)
+            await session.commit()
+            return result.scalar_one()
+
+    async def deactivate_user(self, user_id: UUID) -> bool:
+        async with self.db() as session:
+            await session.execute(
+                update(self.model)
+                    .filter_by(id=user_id)
+                    .values(is_active=False, refresh_token=None)
+            )
             await session.commit()
             return True
 
