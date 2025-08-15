@@ -24,18 +24,24 @@ class AuthManager:
     async def verify_password(self, plain: str, hashed: str) -> bool:
         return pwd_context.verify(plain, hashed)
 
-    # Только access JWT
-    async def create_access_token(self, sub: str, minutes: int = 60) -> str:
+    # JWT tokens
+    async def _create_token(self, sub: str, token_type: str, minutes: int) -> str:
         now = datetime.now(timezone.utc)
         payload = {
             "sub": sub,
-            "typ": "access",
+            "typ": token_type,
             "jti": str(uuid4()),
             "iat": int(now.timestamp()),
             "exp": int((now + timedelta(minutes=minutes)).timestamp()),
         }
         auth = settings.get_auth_data()
         return jwt.encode(payload, auth["secret_key"], algorithm=auth["algorithm"])
+
+    async def create_access_token(self, sub: str, minutes: int = 60) -> str:
+        return await self._create_token(sub, "access", minutes)
+
+    async def create_refresh_token(self, sub: str, minutes: int = 60 * 24 * 7) -> str:
+        return await self._create_token(sub, "refresh", minutes)
 
     async def get_user_from_bearer(self, token: str) -> User:
         if not token:

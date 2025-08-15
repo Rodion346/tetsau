@@ -19,6 +19,7 @@ from app.schemas.user import (
     ResponseLoginUser,
     UpdateUserToken,
     UpdatePasswordUser,
+    UpdateUserProfile,
 )
 from app.services.user import UserService
 
@@ -44,7 +45,7 @@ async def register(
         password=user_data.hashed_password
     )
     user = await user_service.create_user(user_data)
-    access_token = await auth_manager.create_access_token({"sub": str(user.id)})
+    access_token = await auth_manager.create_access_token(str(user.id))
 
     # Установка cookies с правильными параметрами для локальной разработки
     response.set_cookie(
@@ -66,14 +67,17 @@ async def login(
     user_service: UserService = Depends(get_user_service),
 ) -> ResponseLoginUser:
     user = await user_service.get_user_by_email(user_data.email)
-    if not user or not await auth_manager.verify_password(
-        user_data.password, user.hashed_password
+    if (
+        not user
+        or not user.is_active
+        or not await auth_manager.verify_password(user_data.password, user.hashed_password)
     ):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверная почта или пароль"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Неверная почта или пароль",
         )
-    access_token = await auth_manager.create_access_token({"sub": str(user.id)})
-    refresh_token = await auth_manager.create_refresh_token({"sub": str(user.id)})
+    access_token = await auth_manager.create_access_token(str(user.id))
+    refresh_token = await auth_manager.create_refresh_token(str(user.id))
     await user_service.update_refresh_token_by_id(
         UpdateUserToken(id=user.id, refresh_token=refresh_token)
     )
@@ -93,10 +97,8 @@ async def login(
 @router.post(
     "/refresh-token", response_model=ResponseLoginUser, status_code=status.HTTP_200_OK
 )
-async def refresh_token(
-    user_data: User = Depends(update_refresh_token),
-):
-    return user_data
+async def refresh_token(tokens: ResponseLoginUser = Depends(update_refresh_token)):
+    return tokens
 
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
@@ -110,3 +112,31 @@ async def logout_user(
         UpdateUserToken(id=user_data.id, refresh_token=None)
     )
     return {"message": "Пользователь успешно вышел из системы"}
+
+
+@router.get("/me", response_model=User)
+async def read_me(user: User = Depends(get_user)):
+    return user
+
+
+@router.put("/me", response_model=User)
+async def update_me(
+    user_update: UpdateUserProfile,
+    user: User = Depends(get_user),
+    user_service: UserService = Depends(get_user_service),
+):
+    return await user_service.update_user_profile(user.id, user_update)
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_me(
+    response: Response,
+    user: User = Depends(get_user),
+    user_service: UserService = Depends(get_user_service),
+):
+    await user_service.deactivate_user(user.id)
+    response.delete_cookie(key="users_access_token", httponly=True)
+    await user_service.update_refresh_token_by_id(
+        UpdateUserToken(id=user.id, refresh_token=None)
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
